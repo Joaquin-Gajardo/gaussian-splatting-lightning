@@ -386,7 +386,15 @@ class Viewer:
                     initial_value=0.,
                 )
                 self.time_slider.on_update(self._handle_option_updated)
-
+            if self.loaded_model_count > 1:
+                self.model_selector = server.add_gui_slider(
+                    "Model changer",
+                    min=0,
+                    max=self.loaded_model_count -1,
+                    step= 1,
+                    initial_value=0,
+                )
+                self.model_selector.on_update(self._handle_model_selector_updated)
             # add cameras
             if self.show_cameras is True:
                 self.add_cameras_to_scene(server)
