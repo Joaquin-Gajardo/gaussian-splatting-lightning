@@ -11,7 +11,7 @@
 
 import math
 from .renderer import *
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+#from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 from internal.utils.sh_utils import eval_sh
 
 

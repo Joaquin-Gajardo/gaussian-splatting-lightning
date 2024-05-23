@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from internal.utils.sh_utils import RGB2SH
-from simple_knn._C import distCUDA2
+#from simple_knn._C import distCUDA2
 from internal.utils.general_utils import inverse_sigmoid, get_expon_lr_func, build_rotation, strip_symmetric, \
     build_scaling_rotation
 from internal.utils.graphics_utils import BasicPointCloud

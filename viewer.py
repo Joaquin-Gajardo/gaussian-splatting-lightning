@@ -34,7 +34,6 @@ class Viewer:
             enable_transform: bool = False,
             show_cameras: bool = False,
             cameras_json: str = None,
-            vanilla_deformable: bool = False,
             vanilla_gs4d: bool = False,
             up: list[float] = None,
             default_camera_position: List[float] = None,
@@ -74,24 +73,14 @@ class Viewer:
         if vanilla_gs4d is True:
             self.simplified_model = False
 
-        # TODO: load multiple models more elegantly
         # load and create models
-        model, renderer, training_output_base_dir, dataset_type, self.checkpoint = self._load_model_from_file(load_from)
+        model, renderer, training_output_base_dir = self._load_model_from_file(load_from)
 
         def get_load_iteration() -> int:
             return int(os.path.basename(os.path.dirname(load_from)).replace("iteration_", ""))
 
         # whether model is trained by other implementations
-        if vanilla_deformable is True:
-            from internal.renderers.vanilla_deformable_renderer import VanillaDeformableRenderer
-            renderer = VanillaDeformableRenderer(
-                os.path.dirname(os.path.dirname(os.path.dirname(load_from))),
-                get_load_iteration(),
-                device=self.device,
-            )
-            self.show_edit_panel = False
-            self.show_render_panel = False
-        elif vanilla_gs4d is True:
+        if vanilla_gs4d is True:
             from internal.renderers.vanilla_gs4d_renderer import VanillaGS4DRenderer
             renderer = VanillaGS4DRenderer(
                 os.path.dirname(os.path.dirname(os.path.dirname(load_from))),
@@ -105,7 +94,7 @@ class Viewer:
         cameras_json_path = cameras_json
         if cameras_json_path is None:
             cameras_json_path = os.path.join(training_output_base_dir, "cameras.json")
-        self.camera_transform = self._reorient(cameras_json_path, mode=reorient, dataset_type=dataset_type)
+        self.camera_transform = self._reorient(cameras_json_path, mode=reorient)
         if up is not None:
             self.camera_transform = torch.eye(4, dtype=torch.float)
             up = torch.tensor(up)
@@ -128,7 +117,6 @@ class Viewer:
             if os.path.exists(appearance_group_filename) is True:
                 with open(appearance_group_filename, "r") as f:
                     self.available_appearance_options = json.load(f)
-            # self.available_appearance_options["@Disabled"] = None
 
             if enable_transform is True:
                 model = SimplifiedGaussianModelManager(
@@ -142,10 +130,7 @@ class Viewer:
             renderer = VanillaRenderer()
             for model_path in addition_models:
                 load_from = self._search_load_file(model_path)
-                if load_from.endswith(".ckpt"):
-                    load_results = self._do_initialize_models_from_checkpoint(load_from, device=torch.device("cpu"))
-                else:
-                    load_results = self._do_initialize_models_from_point_cloud(load_from, self.sh_degree, device=torch.device("cpu"))
+                load_results = self._do_initialize_models_from_point_cloud(load_from, self.sh_degree, device=torch.device("cpu"))
                 model_list.append(load_results[0])
 
             model = SimplifiedGaussianModelManager(model_list, enable_transform=enable_transform, device=self.device)
@@ -166,7 +151,7 @@ class Viewer:
     def _search_load_file(model_path: str) -> str:
         return GaussianModelLoader.search_load_file(model_path)
 
-    def _reorient(self, cameras_json_path: str, mode: str, dataset_type: str = None):
+    def _reorient(self, cameras_json_path: str, mode: str):
         transform = torch.eye(4, dtype=torch.float)
 
         if mode == "disable":
@@ -176,15 +161,11 @@ class Viewer:
         is_cameras_json_exists = os.path.exists(cameras_json_path)
 
         if is_cameras_json_exists is False:
+            print("no camera json")
             if mode == "enable":
                 raise RuntimeError("{} not exists".format(cameras_json_path))
             else:
                 return transform
-
-        # skip reorient if dataset type is blender
-        if dataset_type in ["blender", "nsvf"] and mode == "auto":
-            print("skip reorient for {} dataset".format(dataset_type))
-            return transform
 
         print("load {}".format(cameras_json_path))
         with open(cameras_json_path, "r") as f:
@@ -198,12 +179,6 @@ class Viewer:
         self.up_direction = up.numpy()
 
         return transform
-
-        # rotation = rotation_matrix(up, torch.Tensor([0, 0, 1]))
-        # transform[:3, :3] = rotation
-        # transform = torch.linalg.inv(transform)
-        #
-        # return transform
 
     def load_camera_poses(self, cameras_json_path: str):
         if os.path.exists(cameras_json_path) is False:
@@ -259,29 +234,10 @@ class Viewer:
                 for i in self.camera_handles:
                     i.visible = self.camera_visible
 
-        # def update_camera_scale(_):
-        #     with viser_server.atomic():
-        #         for i in self.camera_handles:
-        #             i.scale = self.camera_scale_slider.value
 
         with viser_server.add_gui_folder("Cameras"):
             self.toggle_camera_button = viser_server.add_gui_button("Toggle Camera Visibility")
-            # self.camera_scale_slider = viser_server.add_gui_slider(
-            #     "Camera Scale",
-            #     min=0.,
-            #     max=1.,
-            #     step=0.01,
-            #     initial_value=0.1,
-            # )
         self.toggle_camera_button.on_click(toggle_camera_visibility)
-        # self.camera_scale_slider.on_update(update_camera_scale)
-
-    @staticmethod
-    def _do_initialize_models_from_checkpoint(checkpoint_path: str, device):
-        return GaussianModelLoader.initialize_simplified_model_from_checkpoint(checkpoint_path, device)
-
-    def _initialize_models_from_checkpoint(self, checkpoint_path: str):
-        return self._do_initialize_models_from_checkpoint(checkpoint_path, self.device)
 
     @staticmethod
     def _do_initialize_models_from_point_cloud(point_cloud_path: str, sh_degree, device, simplified: bool = True):
@@ -297,14 +253,7 @@ class Viewer:
 
     def _load_model_from_file(self, load_from: str):
         print("load model from {}".format(load_from))
-        checkpoint = None
-        dataset_type = None
-        if load_from.endswith(".ckpt") is True:
-            model, renderer, checkpoint = self._initialize_models_from_checkpoint(load_from)
-            training_output_base_dir = os.path.dirname(os.path.dirname(load_from))
-            dataset_type = checkpoint["datamodule_hyper_parameters"]["type"]
-            self.sh_degree = model.max_sh_degree
-        elif load_from.endswith(".ply") is True:
+        if load_from.endswith(".ply") is True:
             model, renderer = self._initialize_models_from_point_cloud(load_from)
             training_output_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(load_from)))
             if self.use_gsplat is True:
@@ -314,7 +263,7 @@ class Viewer:
         else:
             raise ValueError("unsupported file {}".format(load_from))
 
-        return model, renderer, training_output_base_dir, dataset_type, checkpoint
+        return model, renderer, training_output_base_dir
 
     def start(self, block: bool = True, server_config_fun=None, tab_config_fun=None):
         # create viser server
@@ -597,7 +546,6 @@ if __name__ == "__main__":
     parser.add_argument("--show_cameras", "--show-cameras",
                         action="store_true")
     parser.add_argument("--cameras-json", "--cameras_json", type=str, default=None)
-    parser.add_argument("--vanilla_deformable", action="store_true", default=False)
     parser.add_argument("--vanilla_gs4d", action="store_true", default=False)
     parser.add_argument("--up", nargs=3, required=False, type=float, default=None)
     parser.add_argument("--default_camera_position", "--dcp", nargs=3, required=False, type=float, default=None)
