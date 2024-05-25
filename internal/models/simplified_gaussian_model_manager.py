@@ -36,6 +36,7 @@ class SimplifiedGaussianModelManager:
         }
         self._xyz = torch.zeros((total_gaussian_num, 3), **tensor_initialize_params)
         self._opacity = torch.zeros((total_gaussian_num, 1), **tensor_initialize_params)
+        self._opacity_ground_truth = torch.zeros((total_gaussian_num, 1), **tensor_initialize_params)
         self._features = torch.zeros([total_gaussian_num] + list(simplified_gaussian_models[0].get_features.shape[1:]), **tensor_initialize_params)
         self._scaling = torch.zeros((total_gaussian_num, 3), **tensor_initialize_params)
         self._rotation = torch.zeros((total_gaussian_num, 4), **tensor_initialize_params)
@@ -54,13 +55,25 @@ class SimplifiedGaussianModelManager:
         self.max_sh_degree = simplified_gaussian_models[0].max_sh_degree
         self.active_sh_degree = simplified_gaussian_models[0].max_sh_degree
 
+        self._opacity_ground_truth.copy_(self._opacity)
         self._opacity_origin = None
+
+        begin, end = self.get_model_gaussian_indices(idx = 0)
+        self._opacity[:begin] = 0
+        self._opacity[end:] = 0
 
     def get_model_gaussian_indices(self, idx: int):
         return self.model_gaussian_indices[idx]
 
     def get_model(self, idx: int) -> GaussianModelSimplified:
         return self.models[idx]
+    
+    def select_model(self, idx: int):
+        begin, end = self.get_model_gaussian_indices(idx = 0)
+        
+        self._opacity.copy_(self._opacity_ground_truth)
+        self._opacity[:begin] = 0
+        self._opacity[end:] = 0
 
     def transform_with_vectors(
             self,

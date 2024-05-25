@@ -486,6 +486,13 @@ class Viewer:
         # rerender
         self._handle_option_updated(event)
 
+    def _handle_model_selector_updated(self, event: viser.GuiEvent):
+        if event.client is None:
+            return
+        selected_model_index = self.model_selector.value
+        self.gaussian_model.select_model(idx=selected_model_index)
+        self._handle_option_updated(event)
+
     def _handle_option_updated(self, _):
         """
         Simply push new render to all client
