@@ -1,6 +1,7 @@
-import torch
-import numpy as np
 import internal.utils.gaussian_utils as gaussian_utils
+import numpy as np
+import torch
+
 from .gaussian_model_simplified import GaussianModelSimplified
 
 
@@ -13,7 +14,7 @@ class SimplifiedGaussianModelManager:
     to_parameter_structure = GaussianModelSimplified.to_parameter_structure
     to_ply_structure = GaussianModelSimplified.to_ply_structure
 
-    def __init__(self, simplified_gaussian_models: list[GaussianModelSimplified], enable_transform: bool, device):
+    def __init__(self, simplified_gaussian_models: "list[GaussianModelSimplified]", enable_transform: bool, device):
         super().__init__()
         if enable_transform is True:
             self.models = simplified_gaussian_models

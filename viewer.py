@@ -1,21 +1,23 @@
-import os
-from pathlib import Path
-import math
-import glob
-import time
-import json
 import argparse
-from typing import Tuple, Literal, List
+import glob
+import json
+import math
+import os
+import time
+from pathlib import Path
+from typing import List, Literal, Tuple
 
 import numpy as np
+import torch
 import viser
 import viser.transforms as vtf
-import torch
+from internal.models.simplified_gaussian_model_manager import (
+    SimplifiedGaussianModelManager,
+)
 from internal.renderers import VanillaRenderer
 from internal.utils.gaussian_model_loader import GaussianModelLoader
-from internal.models.simplified_gaussian_model_manager import SimplifiedGaussianModelManager
 from internal.viewer import ClientThread, ViewerRenderer
-from internal.viewer.ui import populate_render_tab, TransformPanel, EditPanel
+from internal.viewer.ui import EditPanel, TransformPanel, populate_render_tab
 from internal.viewer.ui.up_direction_folder import UpDirectionFolder
 
 DROPDOWN_USE_DIRECT_APPEARANCE_EMBEDDING_VALUE = "@Direct"
@@ -24,7 +26,7 @@ DROPDOWN_USE_DIRECT_APPEARANCE_EMBEDDING_VALUE = "@Direct"
 class Viewer:
     def __init__(
             self,
-            model_paths: list[str],
+            model_paths: "list[str]",
             host: str = "0.0.0.0",
             port: int = 8080,
             background_color: Tuple = (0, 0, 0),
@@ -35,7 +37,7 @@ class Viewer:
             show_cameras: bool = False,
             cameras_json: str = None,
             vanilla_gs4d: bool = False,
-            up: list[float] = None,
+            up: "list[float]" = None,
             default_camera_position: List[float] = None,
             default_camera_look_at: List[float] = None,
             no_edit_panel: bool = False,
