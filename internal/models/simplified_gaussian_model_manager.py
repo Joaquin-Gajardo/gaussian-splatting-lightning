@@ -69,7 +69,7 @@ class SimplifiedGaussianModelManager:
         return self.models[idx]
     
     def select_model(self, idx: int):
-        begin, end = self.get_model_gaussian_indices(idx = 0)
+        begin, end = self.get_model_gaussian_indices(idx)
         
         self._opacity.copy_(self._opacity_ground_truth)
         self._opacity[:begin] = 0
