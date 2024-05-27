@@ -1,4 +1,7 @@
-export CUDA_VISIBLE_DEVICES=1; python viewer.py -p 6018 \
+gpu=${1:-1} # default to second gpu, i.e. 1
+port=${2:-6018}
+
+export CUDA_VISIBLE_DEVICES=$gpu; python viewer.py -p $port \
     ../../datasets/Customized/output/time0/point_cloud/iteration_30000/point_cloud.ply \
     ../../datasets/Customized/output/time1/point_cloud/iteration_30000/point_cloud.ply \
     ../../datasets/Customized/output/time2/point_cloud/iteration_30000/point_cloud.ply \
