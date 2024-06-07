@@ -10,9 +10,16 @@
 #
 
 import math
-from .renderer import *
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+
+import cv2
+import numpy as np
+from diff_gaussian_rasterization import (
+    GaussianRasterizationSettings,
+    GaussianRasterizer,
+)
 from internal.utils.sh_utils import eval_sh
+
+from .renderer import *
 
 
 class VanillaRenderer(Renderer):
@@ -107,6 +114,29 @@ class VanillaRenderer(Renderer):
             rotations=rotations,
             cov3D_precomp=cov3D_precomp,
         )
+
+        # # Add text to image # TODO: this adds overhead, and also the renderer image has funny colors maybe due to changing data types and back and forth conversions
+        # device = rendered_image.device
+        # tensor_np = rendered_image.cpu().numpy().copy()
+        # tensor_np = (tensor_np * 255).astype(np.uint8).transpose(1, 2, 0) # Convert the tensor to (H, W, 3) format for OpenCV
+  
+        # from PIL import Image, ImageDraw, ImageFont
+        # image = Image.fromarray(tensor_np)
+        # draw = ImageDraw.Draw(image)
+        
+        # # Add text to the image
+        # position, font_size = (10, 10), 20
+        # try:
+        #     font = ImageFont.truetype("arial.ttf", font_size)
+        # except IOError:
+        #     font = ImageFont.load_default()
+        
+        # draw.text(position, 'dummy', fill=(255, 255, 255), font=font)
+            
+        # # Convert back to tensor format (3, H, W)
+        # tensor_np = np.array(image).transpose(2, 0, 1) / 255.0  # Normalize to [0, 1]
+        # rendered_image = torch.from_numpy(tensor_np).float().to(device)
+        
 
         # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
         # They will be excluded from value updates used in the splitting criteria.
